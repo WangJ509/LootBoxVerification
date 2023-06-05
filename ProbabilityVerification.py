@@ -1,14 +1,6 @@
 from common import *
 import PRB
 import MappingFunction
-import math
-
-realProbability = 0.5
-def isWinning(y: Field) -> bool:
-	m = math.floor(1 / realProbability)
-	if y.v % m == 0:
-		return True
-	return False
 
 class ProbabilityVerificationServer():
 	def __init__(self) -> None:

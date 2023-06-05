@@ -1,8 +1,8 @@
-from flask import Flask
 import hashlib
 from KZG10 import *
 import time
 from py_ecc import fields
+import math
 
 
 # Global variables
@@ -13,6 +13,13 @@ CommonPolynomial = [8,7,8,6,5,3,2,1,2,3,4,5,7]
 BulletinBoardDir = "./BulletinBoard/"
 CommitmentFileName = "commitment.txt"
 EvalProofFileName = "evaluation_proofs.txt"
+
+realProbability = 0.5
+def isWinning(y: Field) -> bool:
+	m = math.floor(1 / realProbability)
+	if y.v % m == 0:
+		return True
+	return False
 
 class LootBoxInput():
 	def __init__(self, r, o):
@@ -54,7 +61,6 @@ def verifyEvalProof(c, input: LootBoxInput, y, W) -> bool:
 	a = curve.pairing(g2_x_sub_i, W)
 	b = curve.pairing(curve.G2, curve.neg(g1_phi_at_x_sub_i))
 	ab = a*b
-	print('ab', ab)
 	return ab == curve.FQ12.one()
 
 if __name__ == "__main__":
