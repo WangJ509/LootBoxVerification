@@ -1,5 +1,5 @@
 from common import *
-from MappingFunction import *
+from MappingFunction import mappingFunction
 
 class LootBoxOpeningServer():
 	def __init__(self) -> None:
@@ -34,8 +34,8 @@ class LootBoxOpeningClient():
 		self.server = server
 
 	def requestOpening(self):
-		beta = generate_random_string(10)
-		o = generate_random_string(10)
+		beta = mappingFunction.generate_random_string(10)
+		o = mappingFunction.generate_random_string(10)
 
 		# call eval of the server
 		previousElement, y, W = server.eval(beta, o)

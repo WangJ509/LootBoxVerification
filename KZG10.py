@@ -5,6 +5,8 @@ from random import randint
 from functools import reduce
 import operator
 from py_ecc import optimized_bn128 as curve
+import numpy as np
+import galois
 
 """
 Implementation of PolyCommit_{DL} from:
@@ -87,7 +89,7 @@ class Field(object):
 		return Field(pow(self.v, other, self.m), self.m)
 
 	def inverse(self):
-		return Field(pow(self.v, self.m-2, self.m), self.m)
+		return Field(pow(self.v, -1, self.m), self.m)
 
 
 class GF(object):
@@ -260,10 +262,38 @@ def CommitDivision(PK: TrustedSetup, y: Field, coeff: List[Field]):
 			result = term if result is None else curve.add(result, term)
 	return result
 
+def CommitDivision_optimized(PK: TrustedSetup, i: Field, coeff: List[Field]):
+	y = polynomial(i, coeff)
+	a = coeff.copy()
+	a[0] -= y
+	b = [-i, PK.F(1)]
+	q, _ = polynomial_division(PK.F, a, b)
+	
+	return CommitSum(PK, q)
+
+def polynomial_division(F, dividend: List[Field], divisor: List[Field]):
+	quotient_degree = len(dividend) - len(divisor)
+	quotient = [F(0)] * (quotient_degree + 1)
+	remainder = dividend[:]
+
+	while len(remainder) >= len(divisor):
+		quotient_term = remainder[-1] / divisor[-1]
+		quotient[quotient_degree] = quotient_term
+
+		for i in range(len(divisor)):
+			remainder[i + quotient_degree] -= quotient_term * divisor[i]
+
+		while len(remainder) > 0 and remainder[-1] == F(0):
+			remainder.pop()
+			quotient_degree -= 1
+
+	return quotient, remainder
 
 def Prove():
 	F = GF(curve.curve_order)
-	coeff = [F.random() for _ in range(10)]
+	# coeff = [F.random() for _ in range(10)]
+	# F = galois.GF(curve.curve_order)
+	coeff = [F.random() for _ in range(30)]
 	PK = TrustedSetup.generate(F, len(coeff), True)
 
 	# Verify with trusted information
@@ -286,8 +316,10 @@ def Prove():
 
 	# Commit to an evaluation of the same polynomial at i
 	i = F.random()  # randomly sampled i
-	phi_at_i = polynomial(i, coeff)	
-	g1_psi_i_at_x = CommitDivision(PK, i, coeff)
+	phi_at_i = polynomial(i, coeff)
+	start = time.time()
+	g1_psi_i_at_x = CommitDivision_optimized(PK, i, coeff)
+	print(time.time() - start)
 
 	# Compute `x - i` in G2
 	g2_i = curve.multiply(curve.G2, int(i))
@@ -296,12 +328,17 @@ def Prove():
 	# Verifier
 	g1_phi_at_i = curve.multiply(curve.G1, int(phi_at_i))
 	g1_phi_at_x_sub_i = curve.add(g1_phi_at_x, curve.neg(g1_phi_at_i))
-	start = time.time()
 	a = curve.pairing(g2_x_sub_i, g1_psi_i_at_x)
 	b = curve.pairing(curve.G2, curve.neg(g1_phi_at_x_sub_i))
-	print(time.time() - start)
 	ab = a*b
 	print('ab', ab, ab == curve.FQ12.one())
 
 if __name__ == "__main__":
 	Prove()
+	# F = GF(curve.curve_order)
+	# coeff = [F(3), F(2), F(1)]
+	# PK = TrustedSetup.generate(F, len(coeff), True)
+
+	# a = CommitDivision_optimized(PK, F(2), coeff)
+	# b = CommitDivision(PK, F(2), coeff)
+	# print(a == b)

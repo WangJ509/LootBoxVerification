@@ -1,15 +1,24 @@
 import random, string
 
-def generate_random_string(length):
-    letters = string.ascii_letters + string.digits
-    return ''.join(random.choice(letters) for _ in range(length))
+class MappingFunction():
+    def __init__(self, size = 30) -> None:
+        self.sampleSize = size
 
-def mapToTestData(seed):
-    random.seed(seed)
-    result = []
-    for _ in range(5):
-        r = generate_random_string(10)
-        o = generate_random_string(10)
-        result.append((r, o))
+    def setSampleSize(self, size):
+        self.sampleSize = size
 
-    return result
+    def generate_random_string(self, length):
+        letters = string.ascii_letters + string.digits
+        return ''.join(random.choice(letters) for _ in range(length))
+
+    def mapToTestData(self, seed):
+        random.seed(seed)
+        result = []
+        for _ in range(self.sampleSize):
+            r = self.generate_random_string(10)
+            o = self.generate_random_string(10)
+            result.append((r, o))
+
+        return result
+
+mappingFunction = MappingFunction()
